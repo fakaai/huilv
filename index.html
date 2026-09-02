@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>实时汇率转换器 - 新浪财经高速版</title>
+    
+    <!-- ⚠️ 核心步骤 1：Google AdSense 官方全局异步脚本 -->
+    <!-- 注意：请将下面的 ca-pub-XXXXXXXXXXXXXXXX 改为你自己的 AdSense 发布的发布商 ID -->
+    <script async src="https://googlesyndication.com" crossorigin="anonymous"></script>
+
     <style>
         :root {
             --primary-color: #4f46e5;
@@ -29,13 +34,20 @@
             padding: 20px;
         }
 
+        .container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
         .converter-card {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
             border-radius: 20px;
             padding: 30px;
             width: 100%;
-            max-width: 480px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
         }
 
@@ -118,17 +130,52 @@
             color: var(--text-muted);
         }
 
+        /* 广告位样式隔离，确保样式不坍塌 */
+        .ads-slot {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90px;
+        }
+
+        .inner-ads-slot {
+            width: 100%;
+            margin-top: 20px;
+            min-height: 100px;
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: 8px;
+        }
+
         .footer-tips {
             text-align: center;
-            margin-top: 20px;
             font-size: 12px;
             color: rgba(255, 255, 255, 0.7);
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
 
-    <div>
+    <div class="container">
+        
+        <!-- 💰 广告位 1：顶部横幅广告（进站即见） -->
+        <div class="ads-slot">
+            <ins class="adsbygoogle"
+                 style="display:block"
+                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                 data-ad-slot="1111111111"
+                 data-ad-format="horizontal"
+                 data-full-width-responsive="true"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
+        </div>
+
+        <!-- 汇率工具卡片核心区 -->
         <div class="converter-card">
             <h1>📊 极速汇率转换器</h1>
             <div class="subtitle">新浪财经高速接口 • 国内网络优化直连</div>
@@ -170,12 +217,26 @@
                 <div class="result-value" id="result-text">0.00</div>
                 <div class="result-rate" id="rate-text">正在同步新浪财经实时数据...</div>
             </div>
+
+            <!-- 💰 广告位 2：卡片内部下方（计算结果正下方，黄金点击位） -->
+            <div class="inner-ads-slot">
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-XXXXXXXXXXXXXXXX"
+                     data-ad-slot="2222222222"
+                     data-ad-format="fluid"
+                     data-ad-layout-key="-fb+5w+4e-db+86"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
+            </div>
+
         </div>
+        
         <div class="footer-tips">新浪金融数据源优化版 • 结果仅供参考</div>
     </div>
 
     <script>
-        // 固化一组保底数据，防止突发网络抖动
         const localRates = {
             "CNY": {"USD": 0.1379, "EUR": 0.1268, "JPY": 21.35, "HKD": 1.082, "GBP": 0.1085, "CNY": 1},
             "USD": {"CNY": 7.2512, "EUR": 0.9192, "JPY": 154.78, "HKD": 7.842, "GBP": 0.7865, "USD": 1},
@@ -194,15 +255,12 @@
 
         let liveRates = {};
 
-        // 使用新浪财经官方免密公开接口 (通过腾讯的服务器进行中转反代，百分百支持HTTPS和国内秒连)
         async function getLiveRates() {
             try {
-                // 请求人民币基准的外汇牌价
                 const res = await fetch('https://exchangerate-api.com');
                 if(!res.ok) throw new Error();
                 const data = await res.json();
                 
-                // 动态构建交叉汇率矩阵
                 const baseRates = data.rates;
                 const currencies = ["CNY", "USD", "EUR", "JPY", "HKD", "GBP"];
                 
@@ -215,7 +273,6 @@
                 
                 rateText.innerText = "● 实时汇率数据已无感同步成功";
             } catch (e) {
-                console.warn("读取云端数据略有延迟，已激活本地高可用引擎。");
                 liveRates = localRates;
                 rateText.innerText = "💡 已启用本地高可用高仿真计算引擎";
             }
@@ -240,23 +297,3 @@
             resultText.innerText = parseFloat(result).toLocaleString('zh-CN', {minimumFractionDigits: 2});
             
             if(!rateText.innerText.includes("本地") && !rateText.innerText.includes("同步")) {
-                rateText.innerText = `1 ${from} = ${rate.toFixed(4)} ${to}`;
-            }
-        }
-
-        amountInput.addEventListener('input', calculate);
-        fromCurrency.addEventListener('change', calculate);
-        toCurrency.addEventListener('change', calculate);
-        
-        swapBtn.addEventListener('click', () => {
-            const temp = fromCurrency.value;
-            fromCurrency.value = toCurrency.value;
-            toCurrency.value = temp;
-            calculate();
-        });
-
-        // 启动加载
-        getLiveRates();
-    </script>
-</body>
-</html>
